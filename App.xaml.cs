@@ -117,12 +117,20 @@ public partial class App : Application
             // 1. 座標轉換 (邏輯 -> 物理)
             var physical = _captureService.GetPhysicalCoordinates(
                 _selectedArea.X, _selectedArea.Y, _selectedArea.Width, _selectedArea.Height);
+            
+            System.Diagnostics.Debug.WriteLine($"[Debug] 選取區域: L={_selectedArea.X}, T={_selectedArea.Y}, W={_selectedArea.Width}, H={_selectedArea.Height}");
+            System.Diagnostics.Debug.WriteLine($"[Debug] 物理座標: X={physical.X}, Y={physical.Y}, W={physical.W}, H={physical.H}");
 
             // 2. 截圖
             var imageBytes = _captureService.CaptureScreenRegion(
                 physical.X, physical.Y, physical.W, physical.H);
 
-            if (imageBytes.Length == 0) return;
+            if (imageBytes.Length == 0) 
+            {
+                System.Diagnostics.Debug.WriteLine("[Debug] 截圖失敗: imageBytes 長度為 0");
+                return;
+            }
+            System.Diagnostics.Debug.WriteLine($"[Debug] 截圖成功: {imageBytes.Length} bytes");
 
             // 3. OCR 辨識
             var currentText = await _ocrService.RecognizeFromBytesAsync(imageBytes);
@@ -130,15 +138,19 @@ public partial class App : Application
 
             if (string.IsNullOrEmpty(currentText)) 
             {
+                System.Diagnostics.Debug.WriteLine("[Debug] OCR 未辨識到文字");
                 Dispatcher.Invoke(() => _overlayWindow?.UpdateText(string.Empty));
                 return;
             }
+            System.Diagnostics.Debug.WriteLine($"[Debug] OCR 辨識結果: {currentText}");
 
             if (currentText == _lastText) return;
             _lastText = currentText;
 
             // 4. 翻譯
+            System.Diagnostics.Debug.WriteLine($"[Debug] 正在請求翻譯: {currentText}");
             var translated = await _translationService.TranslateAsync(currentText);
+            System.Diagnostics.Debug.WriteLine($"[Debug] 翻譯結果: {translated}");
 
             // 5. 更新 UI
             Dispatcher.Invoke(() =>
@@ -148,7 +160,8 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-             System.Diagnostics.Debug.WriteLine($"翻譯管道錯誤: {ex.Message}");
+             System.Diagnostics.Debug.WriteLine($"[Error] 翻譯管道錯誤: {ex.Message}");
+             System.Diagnostics.Debug.WriteLine($"[Error] StackTrace: {ex.StackTrace}");
         }
     }
 
