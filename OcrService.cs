@@ -36,8 +36,23 @@ public class OcrService
     /// </summary>
     public async Task<string> RecognizeTextAsync(SoftwareBitmap bitmap)
     {
-        var result = await _ocrEngine.RecognizeAsync(bitmap);
-        return result.Text;
+        // OCR 引擎要求 SoftwareBitmap 格式必須為 Gray8, Yuy2 或 Bgra8
+        SoftwareBitmap? convertedBitmap = null;
+        try 
+        {
+            if (bitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 || 
+                bitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
+            {
+                convertedBitmap = SoftwareBitmap.Convert(bitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+            }
+
+            var result = await _ocrEngine.RecognizeAsync(convertedBitmap ?? bitmap);
+            return result.Text;
+        }
+        finally
+        {
+            convertedBitmap?.Dispose();
+        }
     }
 
     /// <summary>
@@ -52,9 +67,6 @@ public class OcrService
         var decoder = await BitmapDecoder.CreateAsync(stream);
         using var bitmap = await decoder.GetSoftwareBitmapAsync();
         
-        // OCR 引擎要求 SoftwareBitmap 格式必須為 Gray8, Yuy2 或 Bgra8
-        using var convertedBitmap = SoftwareBitmap.Convert(bitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
-        
-        return await RecognizeTextAsync(convertedBitmap);
+        return await RecognizeTextAsync(bitmap);
     }
 }
