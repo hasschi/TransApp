@@ -14,6 +14,12 @@ public partial class SelectionWindow : Window
     public SelectionWindow()
     {
         InitializeComponent();
+        
+        // 覆蓋所有螢幕
+        this.Left = SystemParameters.VirtualScreenLeft;
+        this.Top = SystemParameters.VirtualScreenTop;
+        this.Width = SystemParameters.VirtualScreenWidth;
+        this.Height = SystemParameters.VirtualScreenHeight;
     }
 
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
