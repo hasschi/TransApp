@@ -43,6 +43,12 @@
 - **安全第一：** 嚴禁硬編碼 (Hard-code) 任何 API Key。
 - **DPI 感知：** 必須確保 `app.manifest` 設置正確以支援 `PerMonitorV2`。
 
+### 3.3 優先規則 (Priority Rules)
+0. **Git 自動版本控制 (最高優先級)：** 每當 Agent 完成檔案的新增、修改或刪除後，**必須主動執行 Git 提交**。提交訊息必須具備語意化 (例如: `Feat: 新增 Bun 管理`, `Fix: 修正路徑偵測`)。
+1. **原生 API 優先：** 優先使用 Windows 內建 API (如 `Windows.Graphics.Capture` 與 `Windows.Media.Ocr`) 以減少依賴與提升效能。
+2. **非同步優先：** 任何涉及 I/O 或耗時計算（如 OCR、API 請求）必須優先考慮 `async/await` 實作。
+3. **穩定性優先：** 在實作新功能前，必須確保現有功能在 DPI 縮放變動下仍能正確工作。
+
 ---
 
 ## 4. 下一步計畫 (Next Steps)
