@@ -12,14 +12,14 @@
     - [x] 全螢幕選取視窗 (`SelectionWindow`)。
     - [x] 矩形選取範圍邏輯 (滑鼠拖曳選取)。
     - [x] DPI 縮放支援 (app.manifest 設定為 PerMonitorV2)。
-    - [ ] 座標映射校正。
+    - [x] 座標映射事件回呼。
 - **第三階段：高效能即時監控引擎 (Core Pipeline)**
-    - [ ] `Windows.Graphics.Capture` 截圖實作。
-    - [ ] `Windows.Media.Ocr` 辨識邏輯。
-    - [ ] 圖片差異比對 (Image Diff) 優化。
+    - [x] 螢幕截圖實作 (GDI+ 基礎版)。
+    - [x] `Windows.Media.Ocr` 辨識邏輯。
+    - [x] 翻譯快取 (Cache) 優化。
 - **第四階段：翻譯顯示與 Overlay (UI/UX)**
-    - [ ] 滑鼠穿透 (Click-through) 視窗實作。
-    - [ ] 翻譯 API 整合。
+    - [x] 滑鼠穿透 (Click-through) 視窗實作。
+    - [x] Google Translate API 免費端點整合。
 
 ## 2. 技術堆疊 (Tech Stack)
 
