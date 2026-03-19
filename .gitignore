@@ -1,0 +1,50 @@
+# .gitignore for .NET (WPF / C#)
+
+## [Visual Studio]
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## [Build Results]
+[Bb]in/
+[Oo]bj/
+[Rr]elease/
+[Dd]ebug/
+[Tt]estResult/
+
+## [NuGet]
+*.nupkg
+*.snupkg
+# NuGet Restore
+node_modules/
+packages/
+*.nuget.props
+*.nuget.targets
+
+## [Operating System]
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## [Project-specific]
+# Backup and temp files
+*.tmp
+*.bak
+*.swp
+*~
+
+## [User-specific settings]
+.vs/
+.idea/
+.vscode/
+*.user
+*.userprefs
+*.v12.suo
+*.v11.suo
+*.v10.suo
+
+## [Common logs]
+*.log
