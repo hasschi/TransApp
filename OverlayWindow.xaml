@@ -4,16 +4,19 @@
         Title="OverlayWindow" Height="100" Width="300"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False">
-    <Grid>
-        <Border Background="#AA000000" CornerRadius="5">
-            <TextBlock x:Name="TranslatedText" 
-                       Text="翻譯內容將顯示在此..." 
-                       Foreground="White" 
-                       FontSize="16" 
-                       TextWrapping="Wrap" 
-                       VerticalAlignment="Center" 
-                       HorizontalAlignment="Center"
-                       Padding="10"/>
-        </Border>
-    </Grid>
+    <Border Background="#CC222222" CornerRadius="8" BorderBrush="#44FFFFFF" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.5"/>
+        </Border.Effect>
+        <TextBlock x:Name="TranslatedText" 
+                   Text="翻譯內容將顯示在此..." 
+                   Foreground="White" 
+                   FontSize="18" 
+                   FontWeight="SemiBold"
+                   TextWrapping="Wrap" 
+                   VerticalAlignment="Center" 
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"
+                   Padding="12"/>
+    </Border>
 </Window>
