@@ -9,6 +9,7 @@ public partial class SelectionWindow : Window
 {
     private Point _startPoint;
     private bool _isSelecting = false;
+    public Action<Rect>? AreaSelected;
 
     public SelectionWindow()
     {
@@ -56,7 +57,10 @@ public partial class SelectionWindow : Window
         var width = SelectionRect.Width;
         var height = SelectionRect.Height;
 
-        Console.WriteLine($"Selected Area: X={x}, Y={y}, Width={width}, Height={height}");
+        if (width > 0 && height > 0)
+        {
+            AreaSelected?.Invoke(new Rect(x, y, width, height));
+        }
         
         this.Close();
     }
