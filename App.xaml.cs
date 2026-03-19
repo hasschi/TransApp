@@ -16,6 +16,7 @@ public partial class App : Application
     private readonly ScreenCaptureService _captureService = new();
     
     private Rect _selectedArea;
+    private CancellationTokenSource? _cts;
     private bool _isMonitoring = false;
     private string _lastText = string.Empty;
 
@@ -47,7 +48,7 @@ public partial class App : Application
 
     private void OnSelectArea(object? sender, HotkeyEventArgs e)
     {
-        _isMonitoring = false; // 暫停監控
+        StopMonitoring(); // 先停止舊的監控
 
         foreach (Window window in Current.Windows)
         {
@@ -68,6 +69,8 @@ public partial class App : Application
     {
         if (_isMonitoring) return;
         _isMonitoring = true;
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
 
         // 設定 Overlay 位置 (稍微偏移選取區域下方)
         _overlayWindow!.Left = _selectedArea.Left;
@@ -78,53 +81,80 @@ public partial class App : Application
         // 啟動背景監控循環 (約 2Hz)
         Task.Run(async () =>
         {
-            while (_isMonitoring)
+            while (!token.IsCancellationRequested)
             {
                 try
                 {
                     await ProcessTranslationAsync();
                 }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"處理錯誤: {ex.Message}");
+                    // 在 Debug 模式下輸出錯誤，避免中斷使用者
+                    System.Diagnostics.Debug.WriteLine($"監控循環錯誤: {ex.Message}");
                 }
-                await Task.Delay(500);
+                await Task.Delay(500, token);
             }
-        });
+        }, token);
+    }
+
+    private void StopMonitoring()
+    {
+        _isMonitoring = false;
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        _overlayWindow?.Hide();
     }
 
     private async Task ProcessTranslationAsync()
     {
-        // 1. 座標轉換 (邏輯 -> 物理)
-        var physical = _captureService.GetPhysicalCoordinates(
-            _selectedArea.X, _selectedArea.Y, _selectedArea.Width, _selectedArea.Height);
-
-        // 2. 截圖
-        var imageBytes = _captureService.CaptureScreenRegion(
-            physical.X, physical.Y, physical.W, physical.H);
-
-        if (imageBytes.Length == 0) return;
-
-        // 3. OCR 辨識
-        var currentText = await _ocrService.RecognizeFromBytesAsync(imageBytes);
-        currentText = currentText.Replace("\n", " ").Replace("\r", " ").Trim();
-
-        if (string.IsNullOrEmpty(currentText) || currentText == _lastText) return;
-        _lastText = currentText;
-
-        // 4. 翻譯
-        var translated = await _translationService.TranslateAsync(currentText);
-
-        // 5. 更新 UI
-        Dispatcher.Invoke(() =>
+        try 
         {
-            _overlayWindow?.UpdateText(translated);
-        });
+            // 1. 座標轉換 (邏輯 -> 物理)
+            var physical = _captureService.GetPhysicalCoordinates(
+                _selectedArea.X, _selectedArea.Y, _selectedArea.Width, _selectedArea.Height);
+
+            // 2. 截圖
+            var imageBytes = _captureService.CaptureScreenRegion(
+                physical.X, physical.Y, physical.W, physical.H);
+
+            if (imageBytes.Length == 0) return;
+
+            // 3. OCR 辨識
+            var currentText = await _ocrService.RecognizeFromBytesAsync(imageBytes);
+            currentText = currentText.Replace("\n", " ").Replace("\r", " ").Trim();
+
+            if (string.IsNullOrEmpty(currentText)) 
+            {
+                Dispatcher.Invoke(() => _overlayWindow?.UpdateText(string.Empty));
+                return;
+            }
+
+            if (currentText == _lastText) return;
+            _lastText = currentText;
+
+            // 4. 翻譯
+            var translated = await _translationService.TranslateAsync(currentText);
+
+            // 5. 更新 UI
+            Dispatcher.Invoke(() =>
+            {
+                _overlayWindow?.UpdateText(translated);
+            });
+        }
+        catch (Exception ex)
+        {
+             System.Diagnostics.Debug.WriteLine($"翻譯管道錯誤: {ex.Message}");
+        }
     }
 
     private void Exit_Click(object sender, RoutedEventArgs e)
     {
-        _isMonitoring = false;
+        StopMonitoring();
         Current.Shutdown();
     }
 
