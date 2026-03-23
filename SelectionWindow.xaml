@@ -9,6 +9,7 @@
         Topmost="True"
         WindowState="Normal"
         Cursor="Cross"
+        KeyDown="Window_KeyDown"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         MouseMove="Window_MouseMove"
         MouseLeftButtonUp="Window_MouseLeftButtonUp">
