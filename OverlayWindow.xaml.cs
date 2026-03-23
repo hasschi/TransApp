@@ -86,18 +86,17 @@ public partial class OverlayWindow : Window
             // 2. 執行響應式佈局邏輯
             this.Dispatcher.BeginInvoke(new Action(() => 
             {
-                ApplyResponsiveLayout(targetRect);
+                ApplyResponsiveLayout(sourceArea, targetRect);
             }), System.Windows.Threading.DispatcherPriority.Loaded);
         }
     }
 
-    private void ApplyResponsiveLayout(Rect targetRect)
+    private void ApplyResponsiveLayout(Rect sourceArea, Rect targetRect)
     {
         StopScrolling();
         var config = ConfigService.Current;
         double currentFontSize = config.FontSize;
         
-        // 確保初始字體正確
         TranslatedText.FontSize = currentFontSize;
         TranslatedText.LineHeight = currentFontSize * 1.0;
         this.UpdateLayout();
@@ -114,13 +113,23 @@ public partial class OverlayWindow : Window
         // 階段二：如果縮小到 12px 還是放不下，強制暫時拉大文字框高度
         if (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 6)
         {
-            TranslationContainer.Height = TranslatedText.ActualHeight + 6;
-            // 當高度已經完全容納文字時，不需要捲動
+            double newHeight = TranslatedText.ActualHeight + 6;
+            
+            // 判斷翻譯框是在選取區的上方還是下方
+            bool isAbove = targetRect.Bottom <= sourceArea.Top + 10; // 留點緩衝判定為上方
+
+            if (isAbove)
+            {
+                // 如果在上方，需要將 Top 向上移動，保持底部位置不變
+                double deltaHeight = newHeight - targetRect.Height;
+                Canvas.SetTop(TranslationContainer, (targetRect.Y - this.Top) - deltaHeight);
+            }
+            
+            TranslationContainer.Height = newHeight;
             StopScrolling();
         }
         else
         {
-            // 如果目前的字體大小已經可以放得下，則檢查是否要啟動捲動 (預防萬一)
             CheckAndStartScrolling(TranslationContainer.Height);
         }
     }
