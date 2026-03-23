@@ -14,12 +14,13 @@
     - [x] DPI 縮放支援 (app.manifest 設定為 PerMonitorV2)。
     - [x] 座標映射事件回呼。
 - **第三階段：高效能即時監控引擎 (Core Pipeline)**
-    - [x] 螢幕截圖實作 (GDI+ 基礎版)。
-    - [x] `Windows.Media.Ocr` 辨識邏輯。
+    - [x] 螢幕截圖實作 (GDI+ 基礎版，支援 DPI)。
+    - [x] `Windows.Media.Ocr` 辨識邏輯 (多語言支援)。
     - [x] 翻譯快取 (Cache) 優化。
 - **第四階段：翻譯顯示與 Overlay (UI/UX)**
     - [x] 滑鼠穿透 (Click-through) 視窗實作。
     - [x] Google Translate API 免費端點整合。
+    - [x] Overlay 視窗高度自適應。
 
 ## 2. 技術堆疊 (Tech Stack)
 
@@ -32,29 +33,16 @@
 
 ## 3. 重要決策與規則 (Mandates & Rules)
 
-### 3.1 即時資訊更新規則 (Real-time Context Maintenance)
+### 3.1 關鍵修正記錄 (Bug Fixes)
 
-為了確保在不同會話中資訊的準確性，每次會話開始或重大進度更新時，必須遵循以下規則：
-
-1. **進度檢核：** 每次實作新功能後，應立即更新 `GEMINI.md` 中的「目前實作進度」。
-2. **技術決策記錄：** 若引入新的函式庫、修改核心架構或變更 Win32 API 呼叫方式，必須在 `GEMINI.md` 中記錄原因與影響。
-3. **環境變更：** 若專案配置（如 `csproj` 屬性、`app.manifest`）有變動，應同步更新文件。
-
-### 3.2 開發準則 (Development Mandates)
-
-- **語言偏好：** 除了程式碼與註解，所有文件與溝通必須使用繁體中文。
-- **效能優先：** OCR 與翻譯請求必須非同步處理，避免 UI 卡頓。
-- **安全第一：** 嚴禁硬編碼 (Hard-code) 任何 API Key。
-- **DPI 感知：** 必須確保 `app.manifest` 設置正確以支援 `PerMonitorV2`。
-
-### 3.3 優先規則 (Priority Rules)
-
-0. **Git 自動版本控制 (最高優先級)：** 每當 Agent 完成檔案的新增、修改或刪除後，**必須主動執行 Git 提交**。提交訊息必須具備語意化 (例如: `Feat: 新增 Bun 管理`, `Fix: 修正路徑偵測`)。
+1. **DPI 縮放修復：** 原本 `ScreenCaptureService` 依賴未顯示的 `MainWindow` 導致 DPI 抓取失敗。現已改為由 `SelectionWindow` 即時捕捉 DPI 並傳遞，確保高解析度螢幕截圖座標精確。
+2. **OCR 多語言化：** 原本硬編碼 `zh-Hant-TW` 導致外文辨識失效。現已改為優先偵測系統語言包並支援多語言辨識。
+3. **監控穩定性：** 引入 `CancellationToken` 確保監控循環在停止時能立即中斷非同步請求，避免資源殘留與 UI 卡死。
 
 ---
 
 ## 4. 下一步計畫 (Next Steps)
 
-1. 實作 `app.manifest` 以支援高 DPI 縮放。
-2. 整合 `Windows.Graphics.Capture` API 進行範圍截圖。
-3. 實作 `Windows.Media.Ocr` 以辨識選取區域內的文字。
+1. 整合 `Windows.Graphics.Capture` API 以獲得更好的效能與現代截圖特性。
+2. 增加設定介面，讓使用者可以自訂翻譯的目標語言與字體大小。
+3. 實作更精準的 OCR 區塊合併邏輯。

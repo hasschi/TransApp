@@ -14,20 +14,22 @@ public class OcrService
 
     public OcrService()
     {
-        // 優先嘗試使用繁體中文辨識引擎，否則使用系統預設
-        var lang = new Windows.Globalization.Language("zh-Hant-TW");
-        if (OcrEngine.IsLanguageSupported(lang))
+        // 優先使用使用者偏好的語言（通常包含日文、英文等已安裝的語言包）
+        _ocrEngine = OcrEngine.TryCreateFromUserProfileLanguages();
+
+        // 如果失敗，再嘗試繁體中文
+        if (_ocrEngine == null)
         {
-            _ocrEngine = OcrEngine.TryCreateFromLanguage(lang);
-        }
-        else
-        {
-            _ocrEngine = OcrEngine.TryCreateFromUserProfileLanguages();
+            var lang = new Windows.Globalization.Language("zh-Hant-TW");
+            if (OcrEngine.IsLanguageSupported(lang))
+            {
+                _ocrEngine = OcrEngine.TryCreateFromLanguage(lang);
+            }
         }
 
         if (_ocrEngine == null)
         {
-            throw new Exception("無法初始化 OCR 引擎。");
+            throw new Exception("無法初始化 OCR 引擎，請確保 Windows 已安裝相關語言包。");
         }
     }
 

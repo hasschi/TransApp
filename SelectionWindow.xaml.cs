@@ -9,7 +9,7 @@ public partial class SelectionWindow : Window
 {
     private Point _startPoint;
     private bool _isSelecting = false;
-    public Action<Rect>? AreaSelected;
+    public Action<Rect, double, double>? AreaSelected;
 
     public SelectionWindow()
     {
@@ -65,7 +65,12 @@ public partial class SelectionWindow : Window
 
         if (width > 0 && height > 0)
         {
-            AreaSelected?.Invoke(new Rect(x, y, width, height));
+            // 捕捉當前螢幕的 DPI 縮放
+            var source = PresentationSource.FromVisual(this);
+            double scaleX = source?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
+            double scaleY = source?.CompositionTarget?.TransformToDevice.M22 ?? 1.0;
+
+            AreaSelected?.Invoke(new Rect(x, y, width, height), scaleX, scaleY);
         }
         
         this.Close();

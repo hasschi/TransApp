@@ -16,6 +16,8 @@ public partial class App : Application
     private readonly ScreenCaptureService _captureService = new();
     
     private Rect _selectedArea;
+    private double _scaleX = 1.0;
+    private double _scaleY = 1.0;
     private CancellationTokenSource? _cts;
     private bool _isMonitoring = false;
     private string _lastText = string.Empty;
@@ -56,9 +58,11 @@ public partial class App : Application
         }
 
         var selectionWindow = new SelectionWindow();
-        selectionWindow.AreaSelected += (rect) =>
+        selectionWindow.AreaSelected += (rect, sx, sy) =>
         {
             _selectedArea = rect;
+            _scaleX = sx;
+            _scaleY = sy;
             StartMonitoring();
         };
         selectionWindow.Show();
@@ -76,7 +80,7 @@ public partial class App : Application
         _overlayWindow!.Left = _selectedArea.Left;
         _overlayWindow!.Top = _selectedArea.Bottom + 5;
         _overlayWindow!.Width = _selectedArea.Width;
-        _overlayWindow!.Show();
+        _overlayWindow!.UpdateText(string.Empty); // 先清空文字
 
         // 啟動背景監控循環 (約 2Hz)
         Task.Run(async () =>
@@ -85,7 +89,7 @@ public partial class App : Application
             {
                 try
                 {
-                    await ProcessTranslationAsync();
+                    await ProcessTranslationAsync(token);
                 }
                 catch (OperationCanceledException)
                 {
@@ -93,8 +97,7 @@ public partial class App : Application
                 }
                 catch (Exception ex)
                 {
-                    // 在控制台輸出錯誤
-                    Console.WriteLine($"監控循環錯誤: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"監控循環錯誤: {ex.Message}");
                 }
                 await Task.Delay(500, token);
             }
@@ -107,30 +110,25 @@ public partial class App : Application
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;
-        _overlayWindow?.Hide();
+        Dispatcher.Invoke(() => _overlayWindow?.Hide());
     }
 
-    private async Task ProcessTranslationAsync()
+    private async Task ProcessTranslationAsync(CancellationToken token)
     {
         try 
         {
             // 1. 座標轉換 (邏輯 -> 物理)
             var physical = _captureService.GetPhysicalCoordinates(
-                _selectedArea.X, _selectedArea.Y, _selectedArea.Width, _selectedArea.Height);
+                _selectedArea.X, _selectedArea.Y, _selectedArea.Width, _selectedArea.Height, _scaleX, _scaleY);
             
-            Console.WriteLine($"[Debug] 選取區域: L={_selectedArea.X}, T={_selectedArea.Y}, W={_selectedArea.Width}, H={_selectedArea.Height}");
-            Console.WriteLine($"[Debug] 物理座標: X={physical.X}, Y={physical.Y}, W={physical.W}, H={physical.H}");
+            System.Diagnostics.Debug.WriteLine($"[Debug] 選取區域: L={_selectedArea.X}, T={_selectedArea.Y}, W={_selectedArea.Width}, H={_selectedArea.Height}, Scale={_scaleX}");
 
             // 2. 截圖
             var imageBytes = _captureService.CaptureScreenRegion(
                 physical.X, physical.Y, physical.W, physical.H);
 
-            if (imageBytes.Length == 0) 
-            {
-                Console.WriteLine("[Debug] 截圖失敗: imageBytes 長度為 0");
-                return;
-            }
-            Console.WriteLine($"[Debug] 截圖成功: {imageBytes.Length} bytes");
+            if (imageBytes.Length == 0) return;
+            token.ThrowIfCancellationRequested();
 
             // 3. OCR 辨識
             var currentText = await _ocrService.RecognizeFromBytesAsync(imageBytes);
@@ -138,19 +136,17 @@ public partial class App : Application
 
             if (string.IsNullOrEmpty(currentText)) 
             {
-                Console.WriteLine("[Debug] OCR 未辨識到文字");
                 Dispatcher.Invoke(() => _overlayWindow?.UpdateText(string.Empty));
                 return;
             }
-            Console.WriteLine($"[Debug] OCR 辨識結果: {currentText}");
 
             if (currentText == _lastText) return;
             _lastText = currentText;
+            token.ThrowIfCancellationRequested();
 
             // 4. 翻譯
-            Console.WriteLine($"[Debug] 正在請求翻譯: {currentText}");
             var translated = await _translationService.TranslateAsync(currentText);
-            Console.WriteLine($"[Debug] 翻譯結果: {translated}");
+            token.ThrowIfCancellationRequested();
 
             // 5. 更新 UI
             Dispatcher.Invoke(() =>
@@ -158,10 +154,10 @@ public partial class App : Application
                 _overlayWindow?.UpdateText(translated);
             });
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-             Console.WriteLine($"[Error] 翻譯管道錯誤: {ex.Message}");
-             Console.WriteLine($"[Error] StackTrace: {ex.StackTrace}");
+             System.Diagnostics.Debug.WriteLine($"[Error] 翻譯管道錯誤: {ex.Message}");
         }
     }
 

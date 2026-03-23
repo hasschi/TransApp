@@ -32,21 +32,13 @@ public class ScreenCaptureService
     /// <summary>
     /// 考慮 DPI 縮放的座標轉換。
     /// </summary>
-    public (int X, int Y, int W, int H) GetPhysicalCoordinates(double logicalX, double logicalY, double logicalW, double logicalH)
+    public (int X, int Y, int W, int H) GetPhysicalCoordinates(double logicalX, double logicalY, double logicalW, double logicalH, double scaleX, double scaleY)
     {
-        // 取得主要螢幕的 DPI 縮放比例
-        var source = PresentationSource.FromVisual(Application.Current.MainWindow);
-        if (source?.CompositionTarget == null)
-            return ((int)logicalX, (int)logicalY, (int)logicalW, (int)logicalH);
-
-        double mX = source.CompositionTarget.TransformToDevice.M11;
-        double mY = source.CompositionTarget.TransformToDevice.M22;
-
         return (
-            (int)(logicalX * mX),
-            (int)(logicalY * mY),
-            (int)(logicalW * mX),
-            (int)(logicalH * mY)
+            (int)(logicalX * scaleX),
+            (int)(logicalY * scaleY),
+            (int)(logicalW * scaleX),
+            (int)(logicalH * scaleY)
         );
     }
 }
