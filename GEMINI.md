@@ -39,6 +39,19 @@
 2. **OCR 多語言化：** 原本硬編碼 `zh-Hant-TW` 導致外文辨識失效。現已改為優先偵測系統語言包並支援多語言辨識。
 3. **監控穩定性：** 引入 `CancellationToken` 確保監控循環在停止時能立即中斷非同步請求，避免資源殘留與 UI 卡死。
 
+### 3.2 開發準則 (Development Mandates)
+
+- **語言偏好：** 除了程式碼與註解，所有文件與溝通必須使用繁體中文。
+- **編碼環境：** Windows PowerShell 執行任何 `run_shell_command` 時，必須先執行 `$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;`。
+- **中文路徑：** 必須設定 `git config --global core.quotepath false` 以防止 Git 在輸出中文路徑時出現亂碼或轉義。
+- **效能優先：** OCR 與翻譯請求必須非同步處理，避免 UI 卡頓。
+- **安全第一：** 嚴禁硬編碼 (Hard-code) 任何 API Key。
+- **DPI 感知：** 必須確保 `app.manifest` 設置正確以支援 `PerMonitorV2`。
+
+### 3.3 優先規則 (Priority Rules)
+
+0. **Git 自動版本控制 (最高優先級)：** 每當 Agent 完成檔案的新增、修改或刪除後，**必須主動執行 Git 提交**。提交訊息必須具備語意化 (例如: `Feat: 新增 Bun 管理`, `Fix: 修正路徑偵測`)。
+
 ---
 
 ## 4. 下一步計畫 (Next Steps)
