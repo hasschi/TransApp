@@ -1,32 +1,52 @@
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Media.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using System.Windows;
+using Windows.Graphics.Capture;
+using Windows.Graphics.DirectX;
+using Windows.Graphics.DirectX.Direct3D11;
+using Windows.Graphics.Imaging;
 
 namespace TransApp;
 
 public class ScreenCaptureService
 {
+    private readonly IDirect3DDevice _device;
+
+    public ScreenCaptureService()
+    {
+        _device = Direct3D11Helper.CreateDevice();
+    }
+
     /// <summary>
     /// 擷取螢幕特定區域並返回位元組陣列。
-    /// 目前先使用 GDI+ 進行基礎實作，後續可優化為 Windows.Graphics.Capture。
+    /// 目前維持 GDI+ 進行基礎實作，確保穩定性。
+    /// 後續可透過 _device 擴充為全硬體加速截圖。
     /// </summary>
     public byte[] CaptureScreenRegion(int x, int y, int width, int height)
     {
         if (width <= 0 || height <= 0) return Array.Empty<byte>();
 
-        using var bitmap = new Bitmap(width, height);
-        using (var g = Graphics.FromImage(bitmap))
+        try
         {
-            g.CopyFromScreen(x, y, 0, 0, new System.Drawing.Size(width, height));
-        }
+            using var bitmap = new Bitmap(width, height);
+            using (var g = Graphics.FromImage(bitmap))
+            {
+                g.CopyFromScreen(x, y, 0, 0, new System.Drawing.Size(width, height));
+            }
 
-        using var ms = new MemoryStream();
-        bitmap.Save(ms, ImageFormat.Png);
-        return ms.ToArray();
+            using var ms = new MemoryStream();
+            bitmap.Save(ms, ImageFormat.Png);
+            return ms.ToArray();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Error] GDI+ 截圖失敗: {ex.Message}");
+            return Array.Empty<byte>();
+        }
     }
 
     /// <summary>
