@@ -81,7 +81,7 @@ public class OcrService
 
                     if (gap > lineHeight * 0.5)
                     {
-                        builder.Append("\n\n"); // 明顯分段
+                        builder.Append("\n"); // 縮小段落間距，僅保留單個換行
                     }
                     else if (gap > -lineHeight * 0.5)
                     {

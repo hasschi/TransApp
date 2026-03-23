@@ -38,6 +38,7 @@
                            TextAlignment="Center"
                            VerticalAlignment="Center"
                            LineStackingStrategy="BlockLineHeight"
+                           Margin="0"
                            Padding="8"/> <!-- 稍微減少 Padding -->
             </ScrollViewer>
         </Border>
