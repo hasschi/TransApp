@@ -9,7 +9,7 @@
         ShowInTaskbar="False"
         WindowState="Normal">
     <Canvas Name="OverlayCanvas">
-        <!-- 選取範圍提示框：淡藍色半透明邊框與背景 -->
+        <!-- 選取範圍提示框 -->
         <Rectangle Name="SelectionHighlight" 
                    Stroke="#8000FFFF" 
                    StrokeThickness="2" 
@@ -22,19 +22,24 @@
                 CornerRadius="8" 
                 BorderBrush="#44FFFFFF" 
                 BorderThickness="1"
-                Visibility="Collapsed">
+                Visibility="Collapsed"
+                ClipToBounds="True"> <!-- 確保文字捲動時不會超出 Border -->
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.5"/>
             </Border.Effect>
-            <TextBlock x:Name="TranslatedText" 
-                       Foreground="White" 
-                       FontSize="18" 
-                       FontWeight="SemiBold"
-                       TextWrapping="Wrap" 
-                       TextAlignment="Center"
-                       VerticalAlignment="Center"
-                       LineStackingStrategy="BlockLineHeight"
-                       Padding="12"/>
+            <ScrollViewer Name="TextScroll" 
+                          VerticalScrollBarVisibility="Hidden" 
+                          HorizontalScrollBarVisibility="Disabled">
+                <TextBlock x:Name="TranslatedText" 
+                           Foreground="White" 
+                           FontSize="18" 
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap" 
+                           TextAlignment="Center"
+                           VerticalAlignment="Center"
+                           LineStackingStrategy="BlockLineHeight"
+                           Padding="8"/> <!-- 稍微減少 Padding -->
+            </ScrollViewer>
         </Border>
     </Canvas>
 </Window>
