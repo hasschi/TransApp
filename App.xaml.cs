@@ -130,7 +130,7 @@ public partial class App : Application
 
             // 3. OCR 辨識
             var currentText = await _ocrService.RecognizeFromBytesAsync(imageBytes);
-            currentText = currentText.Replace("\n", " ").Replace("\r", " ").Trim();
+            currentText = currentText.Trim(); // 僅移除頭尾空白，保留內部換行
 
             if (string.IsNullOrEmpty(currentText)) 
             {

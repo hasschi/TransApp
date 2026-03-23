@@ -31,10 +31,19 @@ public class TranslationService
             // 解析 JSON
             using var doc = JsonDocument.Parse(response);
             var result = "";
-            var sentences = doc.RootElement[0];
-            foreach (var sentence in sentences.EnumerateArray())
+            
+            // Google 翻譯的回傳結構中，第一個元素是句子列表
+            if (doc.RootElement.GetArrayLength() > 0)
             {
-                result += sentence[0].GetString();
+                var sentences = doc.RootElement[0];
+                foreach (var sentence in sentences.EnumerateArray())
+                {
+                    // sentence[0] 是翻譯後的文字，通常會包含原始文本的段落感
+                    if (sentence.GetArrayLength() > 0)
+                    {
+                        result += sentence[0].GetString();
+                    }
+                }
             }
 
             if (!string.IsNullOrEmpty(result))
