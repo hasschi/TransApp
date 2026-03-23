@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,12 +23,10 @@ public partial class OverlayWindow : Window
     public OverlayWindow()
     {
         InitializeComponent();
-        
         this.Left = SystemParameters.VirtualScreenLeft;
         this.Top = SystemParameters.VirtualScreenTop;
         this.Width = SystemParameters.VirtualScreenWidth;
         this.Height = SystemParameters.VirtualScreenHeight;
-
         ApplySettings();
     }
 
@@ -36,11 +35,7 @@ public partial class OverlayWindow : Window
         var config = ConfigService.Current;
         TranslatedText.FontSize = config.FontSize;
         TranslatedText.LineHeight = config.FontSize * 1.0;
-        TranslationContainer.Background = new SolidColorBrush(
-            (Color)ColorConverter.ConvertFromString("#CC222222"))
-            {
-                Opacity = config.Opacity
-            };
+        TranslationContainer.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CC222222")) { Opacity = config.Opacity };
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -71,62 +66,86 @@ public partial class OverlayWindow : Window
             TranslationContainer.Visibility = Visibility.Visible;
             TranslatedText.Text = text;
 
-            // 1. 先恢復到使用者定義的原始位置與大小
-            Canvas.SetLeft(TranslationContainer, targetRect.X - this.Left);
-            Canvas.SetTop(TranslationContainer, targetRect.Y - this.Top);
-            TranslationContainer.Width = targetRect.Width;
-            TranslationContainer.Height = targetRect.Height;
-
-            // 2. 執行響應式佈局邏輯
+            // 執行智慧定位與響應式佈局
             this.Dispatcher.BeginInvoke(new Action(() => 
             {
-                ApplyResponsiveLayout(sourceArea, targetRect);
+                SmartPositionAndScale(sourceArea, targetRect, text);
             }), System.Windows.Threading.DispatcherPriority.Loaded);
         }
     }
 
-    private void ApplyResponsiveLayout(Rect sourceArea, Rect targetRect)
+    private void SmartPositionAndScale(Rect sourceArea, Rect targetRect, string text)
     {
         var config = ConfigService.Current;
-        double currentFontSize = config.FontSize;
+        double baseFontSize = config.FontSize;
+        double spacing = 5;
+        double padding = 6; // 3+3
+
+        // 定義嘗試的位置順序
+        // 1. 下方 (寬度同選取區)
+        // 2. 上方 (寬度同選取區)
+        // 3. 右側 (寬度預設 300)
         
-        TranslatedText.FontSize = currentFontSize;
-        TranslatedText.LineHeight = currentFontSize * 1.0;
-        this.UpdateLayout();
-
-        // 階段一：嘗試縮小字體 (最小 12px)
-        while (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 6 && currentFontSize > 12)
+        var strategies = new List<(string Name, double Width, double AvailableHeight, Func<double, double, Point> PosCalculator)>
         {
-            currentFontSize -= 1;
-            TranslatedText.FontSize = currentFontSize;
-            TranslatedText.LineHeight = currentFontSize * 1.0;
-            this.UpdateLayout();
-        }
+            ("Below", sourceArea.Width, this.Height - (sourceArea.Bottom - this.Top) - spacing, (w, h) => new Point(sourceArea.X, sourceArea.Bottom + spacing)),
+            ("Above", sourceArea.Width, (sourceArea.Top - this.Top) - spacing, (w, h) => new Point(sourceArea.X, sourceArea.Top - h - spacing)),
+            ("Right", 300, this.Height - 10, (w, h) => new Point(sourceArea.Right + spacing, sourceArea.Top))
+        };
 
-        // 階段二：如果縮小到 12px 還是放不下，嘗試暫時拉大文字框
-        if (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 6)
+        foreach (var strategy in strategies)
         {
-            double desiredHeight = TranslatedText.ActualHeight + 6;
-            bool isAbove = targetRect.Bottom <= sourceArea.Top + 10;
+            if (strategy.AvailableHeight < 30) continue; // 空間太小不考慮
 
-            if (isAbove)
-            {
-                double spaceAbove = targetRect.Bottom - 5;
-                double maxAllowedHeight = Math.Min(desiredHeight, spaceAbove);
-                
-                double deltaHeight = maxAllowedHeight - targetRect.Height;
-                Canvas.SetTop(TranslationContainer, (targetRect.Y - this.Top) - deltaHeight);
-                TranslationContainer.Height = maxAllowedHeight;
-            }
-            else
-            {
-                double screenBottom = this.Height;
-                double currentTop = targetRect.Y - this.Top;
-                double spaceBelow = screenBottom - currentTop - 5;
-                double maxAllowedHeight = Math.Min(desiredHeight, spaceBelow);
+            // 模擬在該寬度下的最小所需高度 (縮放至 12px 後)
+            var (bestFontSize, requiredHeight) = MeasureMinHeight(text, strategy.Width, baseFontSize, 12, strategy.AvailableHeight - padding);
 
-                TranslationContainer.Height = maxAllowedHeight;
+            if (requiredHeight <= strategy.AvailableHeight - padding)
+            {
+                // 找到放得下的位置！
+                ApplyLayout(strategy.Width, requiredHeight + padding, bestFontSize, strategy.PosCalculator(strategy.Width, requiredHeight + padding));
+                return;
             }
         }
+
+        // 如果都放不下，就用最後一個嘗試的位置 (右側) 並讓它截斷
+        var last = strategies[2];
+        var (f, h) = MeasureMinHeight(text, last.Width, baseFontSize, 12, last.AvailableHeight - padding);
+        ApplyLayout(last.Width, last.AvailableHeight, f, last.PosCalculator(last.Width, last.AvailableHeight));
+    }
+
+    private (double FontSize, double Height) MeasureMinHeight(string text, double width, double startSize, double minSize, double maxHeight)
+    {
+        double currentSize = startSize;
+        TranslatedText.Width = width - 6; // 減去 Padding
+        
+        while (currentSize >= minSize)
+        {
+            TranslatedText.FontSize = currentSize;
+            TranslatedText.LineHeight = currentSize * 1.0;
+            TranslatedText.UpdateLayout();
+            
+            double h = TranslatedText.ActualHeight;
+            if (h <= maxHeight) return (currentSize, h);
+            currentSize -= 1;
+        }
+
+        // 如果 12px 還是超出，回傳 12px 時的高度
+        TranslatedText.FontSize = minSize;
+        TranslatedText.LineHeight = minSize * 1.0;
+        TranslatedText.UpdateLayout();
+        return (minSize, TranslatedText.ActualHeight);
+    }
+
+    private void ApplyLayout(double w, double h, double fontSize, Point screenPos)
+    {
+        TranslationContainer.Width = w;
+        TranslationContainer.Height = h;
+        TranslatedText.FontSize = fontSize;
+        TranslatedText.LineHeight = fontSize * 1.0;
+        TranslatedText.Width = w - 6;
+
+        Canvas.SetLeft(TranslationContainer, screenPos.X - this.Left);
+        Canvas.SetTop(TranslationContainer, screenPos.Y - this.Top);
     }
 }
