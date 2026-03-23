@@ -110,23 +110,35 @@ public partial class OverlayWindow : Window
             this.UpdateLayout();
         }
 
-        // 階段二：如果縮小到 12px 還是放不下，強制暫時拉大文字框高度
+        // 階段二：如果縮小到 12px 還是放不下，嘗試暫時拉大文字框
         if (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 6)
         {
-            double newHeight = TranslatedText.ActualHeight + 6;
-            
-            // 判斷翻譯框是在選取區的上方還是下方
-            bool isAbove = targetRect.Bottom <= sourceArea.Top + 10; // 留點緩衝判定為上方
+            double desiredHeight = TranslatedText.ActualHeight + 6;
+            bool isAbove = targetRect.Bottom <= sourceArea.Top + 10;
 
             if (isAbove)
             {
-                // 如果在上方，需要將 Top 向上移動，保持底部位置不變
-                double deltaHeight = newHeight - targetRect.Height;
+                // 在上方時：計算剩餘向上空間
+                double spaceAbove = targetRect.Bottom - 5; // 距離頂部的距離
+                double maxAllowedHeight = Math.Min(desiredHeight, spaceAbove);
+                
+                double deltaHeight = maxAllowedHeight - targetRect.Height;
                 Canvas.SetTop(TranslationContainer, (targetRect.Y - this.Top) - deltaHeight);
+                TranslationContainer.Height = maxAllowedHeight;
             }
-            
-            TranslationContainer.Height = newHeight;
-            StopScrolling();
+            else
+            {
+                // 在下方時：計算剩餘向下空間
+                double screenBottom = this.Height;
+                double currentTop = targetRect.Y - this.Top;
+                double spaceBelow = screenBottom - currentTop - 5;
+                double maxAllowedHeight = Math.Min(desiredHeight, spaceBelow);
+
+                TranslationContainer.Height = maxAllowedHeight;
+            }
+
+            // 如果達到最大允許高度後還是放不下，就啟動捲動
+            CheckAndStartScrolling(TranslationContainer.Height);
         }
         else
         {
