@@ -29,7 +29,7 @@
         </Style>
     </Window.Resources>
 
-    <Canvas Name="MainCanvas" Background="Transparent" MouseLeftButtonDown="MainCanvas_MouseLeftButtonDown">
+    <Canvas Name="MainCanvas" Background="Transparent">
         <!-- 主邊框 -->
         <Border Name="TransformBorder" BorderBrush="#FF00CCFF" BorderThickness="2" Background="#1000CCFF">
             <Grid>
