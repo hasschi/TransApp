@@ -31,7 +31,6 @@ public partial class OverlayWindow : Window
         this.Width = SystemParameters.VirtualScreenWidth;
         this.Height = SystemParameters.VirtualScreenHeight;
 
-        // 初始化變換，用於滾動
         TranslatedText.RenderTransform = new TranslateTransform();
 
         ApplySettings();
@@ -41,7 +40,7 @@ public partial class OverlayWindow : Window
     {
         var config = ConfigService.Current;
         TranslatedText.FontSize = config.FontSize;
-        TranslatedText.LineHeight = config.FontSize * 1.0; // 將行高壓縮到 1.0
+        TranslatedText.LineHeight = config.FontSize * 1.0;
         TranslationContainer.Background = new SolidColorBrush(
             (Color)ColorConverter.ConvertFromString("#CC222222"))
             {
@@ -78,16 +77,51 @@ public partial class OverlayWindow : Window
             TranslationContainer.Visibility = Visibility.Visible;
             TranslatedText.Text = text;
 
+            // 1. 先恢復到使用者定義的原始位置與大小
             Canvas.SetLeft(TranslationContainer, targetRect.X - this.Left);
             Canvas.SetTop(TranslationContainer, targetRect.Y - this.Top);
             TranslationContainer.Width = targetRect.Width;
             TranslationContainer.Height = targetRect.Height;
 
-            // 佈局更新後檢查是否需要滾動
+            // 2. 執行響應式佈局邏輯
             this.Dispatcher.BeginInvoke(new Action(() => 
             {
-                CheckAndStartScrolling(targetRect.Height);
+                ApplyResponsiveLayout(targetRect);
             }), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+    }
+
+    private void ApplyResponsiveLayout(Rect targetRect)
+    {
+        StopScrolling();
+        var config = ConfigService.Current;
+        double currentFontSize = config.FontSize;
+        
+        // 確保初始字體正確
+        TranslatedText.FontSize = currentFontSize;
+        TranslatedText.LineHeight = currentFontSize * 1.0;
+        this.UpdateLayout();
+
+        // 階段一：嘗試縮小字體 (最小 12px)
+        while (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 16 && currentFontSize > 12)
+        {
+            currentFontSize -= 1;
+            TranslatedText.FontSize = currentFontSize;
+            TranslatedText.LineHeight = currentFontSize * 1.0;
+            this.UpdateLayout();
+        }
+
+        // 階段二：如果縮小到 12px 還是放不下，強制暫時拉大文字框高度
+        if (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 16)
+        {
+            TranslationContainer.Height = TranslatedText.ActualHeight + 16;
+            // 當高度已經完全容納文字時，不需要捲動
+            StopScrolling();
+        }
+        else
+        {
+            // 如果目前的字體大小已經可以放得下，則檢查是否要啟動捲動 (預防萬一)
+            CheckAndStartScrolling(TranslationContainer.Height);
         }
     }
 
@@ -95,22 +129,17 @@ public partial class OverlayWindow : Window
     {
         StopScrolling();
 
-        // 取得內容的真實高度 (減去 Padding)
         double contentHeight = TranslatedText.ActualHeight;
-        double viewableHeight = containerHeight - 16; // 16 是 Padding (8+8)
+        double viewableHeight = containerHeight - 16;
 
         if (contentHeight > viewableHeight)
         {
-            // 需要滾動：內容比容器高
             double scrollDistance = contentHeight - viewableHeight;
-            
-            // 建立動畫：從 0 到 -scrollDistance，然後再回彈或重新循環
-            // 這裡採用緩慢向下的效果
             var animation = new DoubleAnimation
             {
                 From = 0,
-                To = -scrollDistance - 20, // 多滾動一點點確保看到底
-                Duration = TimeSpan.FromSeconds(Math.Max(3, scrollDistance / 20)), // 根據距離計算速度
+                To = -scrollDistance - 20,
+                Duration = TimeSpan.FromSeconds(Math.Max(3, scrollDistance / 20)),
                 AutoReverse = true,
                 RepeatBehavior = RepeatBehavior.Forever
             };
