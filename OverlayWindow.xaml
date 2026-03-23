@@ -33,6 +33,7 @@
                        TextWrapping="Wrap" 
                        TextAlignment="Center"
                        VerticalAlignment="Center"
+                       LineStackingStrategy="BlockLineHeight"
                        Padding="12"/>
         </Border>
     </Canvas>

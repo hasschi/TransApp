@@ -35,6 +35,7 @@ public partial class OverlayWindow : Window
     {
         var config = ConfigService.Current;
         TranslatedText.FontSize = config.FontSize;
+        TranslatedText.LineHeight = config.FontSize * 1.1; // 將行高設為 1.1 倍
         TranslationContainer.Background = new System.Windows.Media.SolidColorBrush(
             (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#CC222222"))
             {
