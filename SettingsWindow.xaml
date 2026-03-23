@@ -1,0 +1,28 @@
+<Window x:Class="TransApp.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TransApp 設定" Height="350" Width="300"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        Background="#F5F5F5">
+    <StackPanel Margin="20">
+        <TextBlock Text="翻譯設定" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+
+        <TextBlock Text="目標語言"/>
+        <ComboBox Name="TargetLangBox" Margin="0,5,0,15">
+            <ComboBoxItem Content="繁體中文" Tag="zh-TW"/>
+            <ComboBoxItem Content="簡體中文" Tag="zh-CN"/>
+            <ComboBoxItem Content="英文" Tag="en"/>
+            <ComboBoxItem Content="日文" Tag="ja"/>
+        </ComboBox>
+
+        <TextBlock Text="字體大小"/>
+        <Slider Name="FontSizeSlider" Minimum="12" Maximum="36" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,5,0,15"/>
+        <TextBlock Text="{Binding ElementName=FontSizeSlider, Path=Value, StringFormat={}{0}px}" HorizontalAlignment="Right" Margin="0,-15,0,0"/>
+
+        <TextBlock Text="透明度"/>
+        <Slider Name="OpacitySlider" Minimum="0.1" Maximum="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="0,5,0,15"/>
+        <TextBlock Text="{Binding ElementName=OpacitySlider, Path=Value, StringFormat={}{0:P0}}" HorizontalAlignment="Right" Margin="0,-15,0,0"/>
+
+        <Button Content="儲存設定" Click="Save_Click" Height="40" Margin="0,10,0,0" Background="#007ACC" Foreground="White" BorderThickness="0"/>
+    </StackPanel>
+</Window>

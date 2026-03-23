@@ -130,6 +130,7 @@ public partial class App : Application
     {
         try 
         {
+            var config = ConfigService.Current;
             var physical = _captureService.GetPhysicalCoordinates(
                 _selectedArea.X, _selectedArea.Y, _selectedArea.Width, _selectedArea.Height, _scaleX, _scaleY);
             
@@ -152,7 +153,8 @@ public partial class App : Application
             _lastText = currentText;
             token.ThrowIfCancellationRequested();
 
-            var translated = await _translationService.TranslateAsync(currentText);
+            // 使用設定中的語系進行翻譯
+            var translated = await _translationService.TranslateAsync(currentText, config.FromLanguage, config.ToLanguage);
             token.ThrowIfCancellationRequested();
 
             Dispatcher.Invoke(() =>
@@ -180,6 +182,18 @@ public partial class App : Application
     {
         StopMonitoring();
         Current.Shutdown();
+    }
+
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsWindow = new SettingsWindow();
+        settingsWindow.SettingsChanged += () =>
+        {
+            _overlayWindow?.ApplySettings();
+            _lastText = string.Empty; // 設定變更後重設快取
+        };
+        settingsWindow.Show();
+        settingsWindow.Activate();
     }
 
     protected override void OnExit(ExitEventArgs e)

@@ -4,7 +4,7 @@
              xmlns:local="clr-namespace:TransApp">
     <Application.Resources>
          <ContextMenu x:Key="TrayMenu">
-             <MenuItem Header="設定" />
+             <MenuItem Header="設定" Click="Settings_Click" />
              <MenuItem Header="結束" Click="Exit_Click" />
          </ContextMenu>
     </Application.Resources>

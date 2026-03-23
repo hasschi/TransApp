@@ -27,6 +27,19 @@ public partial class OverlayWindow : Window
         this.Top = SystemParameters.VirtualScreenTop;
         this.Width = SystemParameters.VirtualScreenWidth;
         this.Height = SystemParameters.VirtualScreenHeight;
+
+        ApplySettings();
+    }
+
+    public void ApplySettings()
+    {
+        var config = ConfigService.Current;
+        TranslatedText.FontSize = config.FontSize;
+        TranslationContainer.Background = new System.Windows.Media.SolidColorBrush(
+            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#CC222222"))
+            {
+                Opacity = config.Opacity
+            };
     }
 
     protected override void OnSourceInitialized(EventArgs e)
