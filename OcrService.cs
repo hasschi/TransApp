@@ -57,7 +57,20 @@ public class OcrService
 
             foreach (var line in result.Lines)
             {
-                var currentRect = line.Rect;
+                // 計算整行的 BoundingRect (OcrLine 本身沒有 Rect 屬性)
+                double minX = double.MaxValue, minY = double.MaxValue;
+                double maxX = double.MinValue, maxY = double.MinValue;
+
+                foreach (var word in line.Words)
+                {
+                    var r = word.BoundingRect;
+                    minX = Math.Min(minX, r.X);
+                    minY = Math.Min(minY, r.Y);
+                    maxX = Math.Max(maxX, r.X + r.Width);
+                    maxY = Math.Max(maxY, r.Y + r.Height);
+                }
+
+                var currentRect = new Windows.Foundation.Rect(minX, minY, maxX - minX, maxY - minY);
 
                 if (lastRect != null)
                 {
