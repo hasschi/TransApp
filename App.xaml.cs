@@ -76,11 +76,9 @@ public partial class App : Application
         _cts = new CancellationTokenSource();
         var token = _cts.Token;
 
-        // 設定 Overlay 位置 (稍微偏移選取區域下方)
-        _overlayWindow!.Left = _selectedArea.Left;
-        _overlayWindow!.Top = _selectedArea.Bottom + 5;
-        _overlayWindow!.Width = _selectedArea.Width;
-        _overlayWindow!.UpdateText(string.Empty); // 先清空文字
+        // 顯示全螢幕 Overlay (它現在負責繪製選取框與文字)
+        _overlayWindow!.Show();
+        _overlayWindow!.UpdateResult(_selectedArea, string.Empty);
 
         // 啟動背景監控循環 (約 2Hz)
         Task.Run(async () =>
@@ -136,7 +134,7 @@ public partial class App : Application
 
             if (string.IsNullOrEmpty(currentText)) 
             {
-                Dispatcher.Invoke(() => _overlayWindow?.UpdateText(string.Empty));
+                Dispatcher.Invoke(() => _overlayWindow?.UpdateResult(_selectedArea, string.Empty));
                 return;
             }
 
@@ -151,7 +149,7 @@ public partial class App : Application
             // 5. 更新 UI
             Dispatcher.Invoke(() =>
             {
-                _overlayWindow?.UpdateText(translated);
+                _overlayWindow?.UpdateResult(_selectedArea, translated);
             });
         }
         catch (OperationCanceledException) { throw; }

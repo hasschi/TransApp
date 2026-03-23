@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 
 namespace TransApp;
@@ -20,6 +21,12 @@ public partial class OverlayWindow : Window
     public OverlayWindow()
     {
         InitializeComponent();
+        
+        // 覆蓋所有螢幕
+        this.Left = SystemParameters.VirtualScreenLeft;
+        this.Top = SystemParameters.VirtualScreenTop;
+        this.Width = SystemParameters.VirtualScreenWidth;
+        this.Height = SystemParameters.VirtualScreenHeight;
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -32,16 +39,38 @@ public partial class OverlayWindow : Window
         SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT | WS_EX_LAYERED);
     }
 
-    public void UpdateText(string text)
+    /// <summary>
+    /// 更新翻譯結果並繪製提示框。
+    /// </summary>
+    public void UpdateResult(Rect area, string text)
     {
+        // 1. 更新提示框 (Highlight)
+        SelectionHighlight.Visibility = Visibility.Visible;
+        Canvas.SetLeft(SelectionHighlight, area.X - SystemParameters.VirtualScreenLeft);
+        Canvas.SetTop(SelectionHighlight, area.Y - SystemParameters.VirtualScreenTop);
+        SelectionHighlight.Width = area.Width;
+        SelectionHighlight.Height = area.Height;
+
+        // 2. 更新翻譯文字 (Text)
         if (string.IsNullOrEmpty(text))
         {
-            this.Hide();
+            TranslationContainer.Visibility = Visibility.Collapsed;
         }
         else
         {
-            this.Show();
+            TranslationContainer.Visibility = Visibility.Visible;
             TranslatedText.Text = text;
+
+            // 計算文字顯示位置 (選取框下方 5 像素，置中對齊選取框)
+            double textLeft = area.X + (area.Width / 2) - (TranslationContainer.ActualWidth / 2);
+            double textTop = area.Y + area.Height + 5;
+            
+            // 修正座標 (減去虛擬螢幕偏移)
+            textLeft -= SystemParameters.VirtualScreenLeft;
+            textTop -= SystemParameters.VirtualScreenTop;
+
+            Canvas.SetLeft(TranslationContainer, textLeft);
+            Canvas.SetTop(TranslationContainer, textTop);
         }
     }
 }
