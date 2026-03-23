@@ -37,10 +37,11 @@ public partial class App : Application
             ContextMenu = (System.Windows.Controls.ContextMenu)FindResource("TrayMenu")
         };
 
-        // 註冊全域快捷鍵 Alt + Q
+        // 註冊全域快捷鍵 Alt + Q (選取) 與 Alt + R (編輯)
         try
         {
             HotkeyManager.Current.AddOrReplace("SelectArea", Key.Q, ModifierKeys.Alt, OnSelectArea);
+            HotkeyManager.Current.AddOrReplace("EditArea", Key.R, ModifierKeys.Alt, OnEditArea);
         }
         catch (Exception ex)
         {
@@ -50,7 +51,7 @@ public partial class App : Application
 
     private void OnSelectArea(object? sender, HotkeyEventArgs e)
     {
-        StopMonitoring(); // 先停止舊的監控
+        StopMonitoring();
 
         foreach (Window window in Current.Windows)
         {
@@ -60,13 +61,38 @@ public partial class App : Application
         var selectionWindow = new SelectionWindow();
         selectionWindow.AreaSelected += (rect, sx, sy) =>
         {
-            _selectedArea = rect;
             _scaleX = sx;
             _scaleY = sy;
-            StartMonitoring();
+            UpdateAreaAndStartMonitoring(rect);
         };
         selectionWindow.Show();
         selectionWindow.Activate();
+    }
+
+    private void OnEditArea(object? sender, HotkeyEventArgs e)
+    {
+        if (_selectedArea.Width <= 0) 
+        {
+            MessageBox.Show("請先按 Alt + Q 選取一個區域。");
+            return;
+        }
+
+        StopMonitoring();
+
+        var transformWindow = new TransformWindow(_selectedArea);
+        transformWindow.AreaUpdated += (rect) =>
+        {
+            UpdateAreaAndStartMonitoring(rect);
+        };
+        transformWindow.Show();
+        transformWindow.Activate();
+    }
+
+    private void UpdateAreaAndStartMonitoring(Rect rect)
+    {
+        _selectedArea = rect;
+        _lastText = string.Empty; // 重設快取
+        StartMonitoring();
     }
 
     private void StartMonitoring()

@@ -1,0 +1,54 @@
+<Window x:Class="TransApp.TransformWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
+        Title="TransformWindow" 
+        WindowStyle="None" 
+        AllowsTransparency="True" 
+        Background="#20000000"
+        Topmost="True" 
+        ShowInTaskbar="False"
+        KeyDown="Window_KeyDown">
+    <Window.Resources>
+        <!-- 控制點樣式 -->
+        <Style x:Key="ResizeHandle" TargetType="Thumb">
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FF00CCFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Rectangle Fill="{TemplateBinding Background}" 
+                                   Stroke="{TemplateBinding BorderBrush}" 
+                                   StrokeThickness="{TemplateBinding BorderThickness}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Canvas Name="MainCanvas" Background="Transparent" MouseLeftButtonDown="MainCanvas_MouseLeftButtonDown">
+        <!-- 主邊框 -->
+        <Border Name="TransformBorder" BorderBrush="#FF00CCFF" BorderThickness="2" Background="#1000CCFF">
+            <Grid>
+                <!-- 八個控制點 -->
+                <!-- 角落 -->
+                <s:Thumb Style="{StaticResource ResizeHandle}" Cursor="SizeNWSE" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-5,-5,0,0" DragDelta="Handle_DragDelta" Tag="NW"/>
+                <s:Thumb Style="{StaticResource ResizeHandle}" Cursor="SizeNESW" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-5,0" DragDelta="Handle_DragDelta" Tag="NE"/>
+                <s:Thumb Style="{StaticResource ResizeHandle}" Cursor="SizeNESW" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-5,0,0,-5" DragDelta="Handle_DragDelta" Tag="SW"/>
+                <s:Thumb Style="{StaticResource ResizeHandle}" Cursor="SizeNWSE" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-5,-5" DragDelta="Handle_DragDelta" Tag="SE"/>
+                <!-- 邊緣 -->
+                <s:Thumb Style="{StaticResource ResizeHandle}" Cursor="SizeNS" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-5,0,0" DragDelta="Handle_DragDelta" Tag="N"/>
+                <s:Thumb Style="{StaticResource ResizeHandle}" Cursor="SizeNS" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-5" DragDelta="Handle_DragDelta" Tag="S"/>
+                <s:Thumb Style="{StaticResource ResizeHandle}" Cursor="SizeWE" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-5,0,0,0" DragDelta="Handle_DragDelta" Tag="W"/>
+                <s:Thumb Style="{StaticResource ResizeHandle}" Cursor="SizeWE" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-5,0" DragDelta="Handle_DragDelta" Tag="E"/>
+            </Grid>
+        </Border>
+
+        <StackPanel Canvas.Bottom="-30" HorizontalAlignment="Center" Orientation="Horizontal" Name="HintPanel">
+            <TextBlock Text="[Enter] 確定 | [Esc] 取消 | 拖曳中心移動" Foreground="White" Background="#80000000" Padding="5,2"/>
+        </StackPanel>
+    </Canvas>
+</Window>
