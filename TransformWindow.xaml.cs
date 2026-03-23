@@ -81,15 +81,6 @@ public partial class TransformWindow : Window
         UpdateUI();
     }
 
-    private void MainCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        // 點擊中間區域可以拖曳整塊移動
-        if (e.Source == TransformBorder)
-        {
-            this.DragMove(); // 這會拖曳整個視窗，不符合需求。改用手動
-        }
-    }
-
     // 實作手動拖曳
     private Point _lastMousePos;
     private bool _isDragging = false;
@@ -97,11 +88,19 @@ public partial class TransformWindow : Window
     protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         base.OnPreviewMouseLeftButtonDown(e);
-        if (e.Source == TransformBorder)
+
+        // 如果點擊的是控制點 (Thumb)，則由控制點自己處理，不進行移動
+        if (e.OriginalSource is Thumb) return;
+
+        // 檢查是否點擊在 TransformBorder 範圍內
+        var pos = e.GetPosition(TransformBorder);
+        if (pos.X >= 0 && pos.X <= TransformBorder.ActualWidth &&
+            pos.Y >= 0 && pos.Y <= TransformBorder.ActualHeight)
         {
             _isDragging = true;
             _lastMousePos = e.GetPosition(this);
             TransformBorder.CaptureMouse();
+            e.Handled = true; // 標記已處理，避免與 Canvas 衝突
         }
     }
 
