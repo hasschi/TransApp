@@ -66,7 +66,6 @@ public partial class OverlayWindow : Window
             TranslationContainer.Visibility = Visibility.Visible;
             TranslatedText.Text = text;
 
-            // 執行智慧定位與響應式佈局
             this.Dispatcher.BeginInvoke(new Action(() => 
             {
                 SmartPositionAndScale(sourceArea, targetRect, text);
@@ -79,36 +78,42 @@ public partial class OverlayWindow : Window
         var config = ConfigService.Current;
         double baseFontSize = config.FontSize;
         double spacing = 5;
-        double padding = 6; // 3+3
+        double padding = 6;
 
-        // 定義嘗試的位置順序
-        // 1. 下方 (寬度同選取區)
-        // 2. 上方 (寬度同選取區)
-        // 3. 右側 (寬度預設 300)
-        
+        // 計算絕對螢幕邊界
+        double screenTop = SystemParameters.VirtualScreenTop;
+        double screenBottom = screenTop + SystemParameters.VirtualScreenHeight;
+        double screenRight = SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth;
+
         var strategies = new List<(string Name, double Width, double AvailableHeight, Func<double, double, Point> PosCalculator)>
         {
-            ("Below", sourceArea.Width, this.Height - (sourceArea.Bottom - this.Top) - spacing, (w, h) => new Point(sourceArea.X, sourceArea.Bottom + spacing)),
-            ("Above", sourceArea.Width, (sourceArea.Top - this.Top) - spacing, (w, h) => new Point(sourceArea.X, sourceArea.Top - h - spacing)),
-            ("Right", 300, this.Height - 10, (w, h) => new Point(sourceArea.Right + spacing, sourceArea.Top))
+            // 1. 下方
+            ("Below", sourceArea.Width, screenBottom - sourceArea.Bottom - spacing - 10, 
+                (w, h) => new Point(sourceArea.X, sourceArea.Bottom + spacing)),
+            
+            // 2. 上方
+            ("Above", sourceArea.Width, sourceArea.Top - screenTop - spacing - 10, 
+                (w, h) => new Point(sourceArea.X, sourceArea.Top - h - spacing)),
+            
+            // 3. 右側
+            ("Right", 300, screenBottom - screenTop - 20, 
+                (w, h) => new Point(Math.Min(sourceArea.Right + spacing, screenRight - 310), sourceArea.Y))
         };
 
         foreach (var strategy in strategies)
         {
-            if (strategy.AvailableHeight < 30) continue; // 空間太小不考慮
+            if (strategy.AvailableHeight < 40) continue;
 
-            // 模擬在該寬度下的最小所需高度 (縮放至 12px 後)
             var (bestFontSize, requiredHeight) = MeasureMinHeight(text, strategy.Width, baseFontSize, 12, strategy.AvailableHeight - padding);
 
             if (requiredHeight <= strategy.AvailableHeight - padding)
             {
-                // 找到放得下的位置！
                 ApplyLayout(strategy.Width, requiredHeight + padding, bestFontSize, strategy.PosCalculator(strategy.Width, requiredHeight + padding));
                 return;
             }
         }
 
-        // 如果都放不下，就用最後一個嘗試的位置 (右側) 並讓它截斷
+        // 保底：右側
         var last = strategies[2];
         var (f, h) = MeasureMinHeight(text, last.Width, baseFontSize, 12, last.AvailableHeight - padding);
         ApplyLayout(last.Width, last.AvailableHeight, f, last.PosCalculator(last.Width, last.AvailableHeight));
@@ -117,7 +122,7 @@ public partial class OverlayWindow : Window
     private (double FontSize, double Height) MeasureMinHeight(string text, double width, double startSize, double minSize, double maxHeight)
     {
         double currentSize = startSize;
-        TranslatedText.Width = width - 6; // 減去 Padding
+        TranslatedText.Width = width - 6;
         
         while (currentSize >= minSize)
         {
@@ -130,7 +135,6 @@ public partial class OverlayWindow : Window
             currentSize -= 1;
         }
 
-        // 如果 12px 還是超出，回傳 12px 時的高度
         TranslatedText.FontSize = minSize;
         TranslatedText.LineHeight = minSize * 1.0;
         TranslatedText.UpdateLayout();
@@ -139,6 +143,14 @@ public partial class OverlayWindow : Window
 
     private void ApplyLayout(double w, double h, double fontSize, Point screenPos)
     {
+        // 最終安全檢查：確保不會超出螢幕邊界
+        double screenTop = SystemParameters.VirtualScreenTop;
+        double screenBottom = screenTop + SystemParameters.VirtualScreenHeight;
+        
+        double finalTop = screenPos.Y;
+        if (finalTop + h > screenBottom) finalTop = screenBottom - h - 5;
+        if (finalTop < screenTop) finalTop = screenTop + 5;
+
         TranslationContainer.Width = w;
         TranslationContainer.Height = h;
         TranslatedText.FontSize = fontSize;
@@ -146,6 +158,6 @@ public partial class OverlayWindow : Window
         TranslatedText.Width = w - 6;
 
         Canvas.SetLeft(TranslationContainer, screenPos.X - this.Left);
-        Canvas.SetTop(TranslationContainer, screenPos.Y - this.Top);
+        Canvas.SetTop(TranslationContainer, finalTop - this.Top);
     }
 }
