@@ -167,6 +167,15 @@ public partial class App : Application
         }
     }
 
+    private void StopMonitoring()
+    {
+        _isMonitoring = false;
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        Dispatcher.Invoke(() => _overlayWindow?.Hide());
+    }
+
     private void Exit_Click(object sender, RoutedEventArgs e)
     {
         StopMonitoring();
