@@ -39,7 +39,7 @@
                            VerticalAlignment="Center"
                            LineStackingStrategy="BlockLineHeight"
                            Margin="0"
-                           Padding="8"/> <!-- 稍微減少 Padding -->
+                           Padding="3"/> <!-- 減少 Padding 至 3px -->
             </ScrollViewer>
         </Border>
     </Canvas>

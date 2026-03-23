@@ -103,7 +103,7 @@ public partial class OverlayWindow : Window
         this.UpdateLayout();
 
         // 階段一：嘗試縮小字體 (最小 12px)
-        while (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 16 && currentFontSize > 12)
+        while (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 6 && currentFontSize > 12)
         {
             currentFontSize -= 1;
             TranslatedText.FontSize = currentFontSize;
@@ -112,9 +112,9 @@ public partial class OverlayWindow : Window
         }
 
         // 階段二：如果縮小到 12px 還是放不下，強制暫時拉大文字框高度
-        if (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 16)
+        if (TranslatedText.ActualHeight > TranslationContainer.ActualHeight - 6)
         {
-            TranslationContainer.Height = TranslatedText.ActualHeight + 16;
+            TranslationContainer.Height = TranslatedText.ActualHeight + 6;
             // 當高度已經完全容納文字時，不需要捲動
             StopScrolling();
         }
@@ -130,7 +130,7 @@ public partial class OverlayWindow : Window
         StopScrolling();
 
         double contentHeight = TranslatedText.ActualHeight;
-        double viewableHeight = containerHeight - 16;
+        double viewableHeight = containerHeight - 6;
 
         if (contentHeight > viewableHeight)
         {
