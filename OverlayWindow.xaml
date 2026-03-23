@@ -7,7 +7,7 @@
         Background="Transparent"
         Topmost="True" 
         ShowInTaskbar="False"
-        WindowState="Maximized">
+        WindowState="Normal">
     <Canvas Name="OverlayCanvas">
         <!-- 選取範圍提示框：淡藍色半透明邊框與背景 -->
         <Rectangle Name="SelectionHighlight" 

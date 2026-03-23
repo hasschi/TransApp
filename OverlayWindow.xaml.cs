@@ -44,10 +44,14 @@ public partial class OverlayWindow : Window
     /// </summary>
     public void UpdateResult(Rect area, string text)
     {
+        // 確保視窗座標正確 (有時螢幕配置改變需要重新對齊)
+        this.Left = SystemParameters.VirtualScreenLeft;
+        this.Top = SystemParameters.VirtualScreenTop;
+
         // 1. 更新提示框 (Highlight)
         SelectionHighlight.Visibility = Visibility.Visible;
-        Canvas.SetLeft(SelectionHighlight, area.X - SystemParameters.VirtualScreenLeft);
-        Canvas.SetTop(SelectionHighlight, area.Y - SystemParameters.VirtualScreenTop);
+        Canvas.SetLeft(SelectionHighlight, area.X - this.Left);
+        Canvas.SetTop(SelectionHighlight, area.Y - this.Top);
         SelectionHighlight.Width = area.Width;
         SelectionHighlight.Height = area.Height;
 
@@ -62,13 +66,10 @@ public partial class OverlayWindow : Window
             TranslatedText.Text = text;
 
             // 計算文字顯示位置 (選取框下方 5 像素，置中對齊選取框)
-            double textLeft = area.X + (area.Width / 2) - (TranslationContainer.ActualWidth / 2);
-            double textTop = area.Y + area.Height + 5;
+            // 這裡必須在佈局完成後計算 ActualWidth，我們先設置一個估算位置
+            double textLeft = (area.X - this.Left) + (area.Width / 2) - 150; // 假定寬度 300
+            double textTop = (area.Y - this.Top) + area.Height + 5;
             
-            // 修正座標 (減去虛擬螢幕偏移)
-            textLeft -= SystemParameters.VirtualScreenLeft;
-            textTop -= SystemParameters.VirtualScreenTop;
-
             Canvas.SetLeft(TranslationContainer, textLeft);
             Canvas.SetTop(TranslationContainer, textTop);
         }

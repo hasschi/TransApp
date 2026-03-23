@@ -7,7 +7,7 @@
         AllowsTransparency="True"
         Background="#40000000"
         Topmost="True"
-        WindowState="Maximized"
+        WindowState="Normal"
         Cursor="Cross"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         MouseMove="Window_MouseMove"

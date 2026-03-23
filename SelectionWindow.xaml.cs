@@ -58,8 +58,8 @@ public partial class SelectionWindow : Window
         _isSelecting = false;
         this.ReleaseMouseCapture();
 
-        var x = Canvas.GetLeft(SelectionRect);
-        var y = Canvas.GetTop(SelectionRect);
+        var x = Canvas.GetLeft(SelectionRect) + this.Left;
+        var y = Canvas.GetTop(SelectionRect) + this.Top;
         var width = SelectionRect.Width;
         var height = SelectionRect.Height;
 
