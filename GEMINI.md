@@ -42,7 +42,7 @@
 ### 3.2 開發準則 (Development Mandates)
 
 - **語言偏好：** 除了程式碼與註解，所有文件與溝通必須使用繁體中文。
-- **編碼環境：** Windows PowerShell 執行任何 `run_shell_command` 時，必須先執行 `$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;`。
+- **編碼環境：** Windows PowerShell 執行任何 `run_shell_command` 時，必須先執行 `$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;`。此外，連接多個指令時**嚴禁使用 `&&`**，必須使用分號 `;` (例如 `git add .; git commit -m 'msg'`)。
 - **中文路徑：** 必須設定 `git config --global core.quotepath false` 以防止 Git 在輸出中文路徑時出現亂碼或轉義。
 - **效能優先：** OCR 與翻譯請求必須非同步處理，避免 UI 卡頓。
 - **安全第一：** 嚴禁硬編碼 (Hard-code) 任何 API Key。
