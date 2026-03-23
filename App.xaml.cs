@@ -66,8 +66,27 @@ public partial class App : Application
             _scaleY = sy;
             _selectedArea = rect;
             
-            // 預設翻譯框在選取範圍下方，寬度與選取範圍一致，預設高度 100
-            _overlayRect = new Rect(rect.X, rect.Y + rect.Height + 5, rect.Width, 100);
+            // 預設翻譯框高度與間距
+            double overlayHeight = 100;
+            double spacing = 5;
+            
+            // 偵測螢幕邊界，決定翻譯框放在上方還是下方
+            double screenBottom = SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight;
+            double spaceBelow = screenBottom - rect.Bottom;
+            
+            double targetY;
+            if (spaceBelow < (overlayHeight + spacing) && rect.Top > (overlayHeight + spacing))
+            {
+                // 下方空間不足，且上方空間足夠，改放上方
+                targetY = rect.Top - overlayHeight - spacing;
+            }
+            else
+            {
+                // 預設放在下方
+                targetY = rect.Bottom + spacing;
+            }
+
+            _overlayRect = new Rect(rect.X, targetY, rect.Width, overlayHeight);
             
             _lastText = string.Empty;
             StartMonitoring();
