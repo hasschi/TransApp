@@ -16,6 +16,7 @@ public partial class App : Application
     private readonly ScreenCaptureService _captureService = new();
     
     private Rect _selectedArea;
+    private Rect _overlayRect; // 獨立儲存翻譯框的位置與大小
     private double _scaleX = 1.0;
     private double _scaleY = 1.0;
     private CancellationTokenSource? _cts;
@@ -37,11 +38,11 @@ public partial class App : Application
             ContextMenu = (System.Windows.Controls.ContextMenu)FindResource("TrayMenu")
         };
 
-        // 註冊全域快捷鍵 Alt + Q (選取) 與 Alt + R (編輯)
+        // 註冊全域快捷鍵 Alt + Q (選取來源) 與 Alt + R (調整文字框)
         try
         {
             HotkeyManager.Current.AddOrReplace("SelectArea", Key.Q, ModifierKeys.Alt, OnSelectArea);
-            HotkeyManager.Current.AddOrReplace("EditArea", Key.R, ModifierKeys.Alt, OnEditArea);
+            HotkeyManager.Current.AddOrReplace("EditOverlay", Key.R, ModifierKeys.Alt, OnEditOverlay);
         }
         catch (Exception ex)
         {
@@ -63,13 +64,19 @@ public partial class App : Application
         {
             _scaleX = sx;
             _scaleY = sy;
-            UpdateAreaAndStartMonitoring(rect);
+            _selectedArea = rect;
+            
+            // 預設翻譯框在選取範圍下方，寬度與選取範圍一致，預設高度 100
+            _overlayRect = new Rect(rect.X, rect.Y + rect.Height + 5, rect.Width, 100);
+            
+            _lastText = string.Empty;
+            StartMonitoring();
         };
         selectionWindow.Show();
         selectionWindow.Activate();
     }
 
-    private void OnEditArea(object? sender, HotkeyEventArgs e)
+    private void OnEditOverlay(object? sender, HotkeyEventArgs e)
     {
         if (_selectedArea.Width <= 0) 
         {
@@ -79,20 +86,15 @@ public partial class App : Application
 
         StopMonitoring();
 
-        var transformWindow = new TransformWindow(_selectedArea);
+        // 調整的是翻譯框 (_overlayRect)
+        var transformWindow = new TransformWindow(_overlayRect);
         transformWindow.AreaUpdated += (rect) =>
         {
-            UpdateAreaAndStartMonitoring(rect);
+            _overlayRect = rect;
+            StartMonitoring();
         };
         transformWindow.Show();
         transformWindow.Activate();
-    }
-
-    private void UpdateAreaAndStartMonitoring(Rect rect)
-    {
-        _selectedArea = rect;
-        _lastText = string.Empty; // 重設快取
-        StartMonitoring();
     }
 
     private void StartMonitoring()
@@ -102,11 +104,10 @@ public partial class App : Application
         _cts = new CancellationTokenSource();
         var token = _cts.Token;
 
-        // 顯示全螢幕 Overlay (它現在負責繪製選取框與文字)
         _overlayWindow!.Show();
-        _overlayWindow!.UpdateResult(_selectedArea, string.Empty);
+        _overlayWindow!.UpdateResult(_selectedArea, _overlayRect, string.Empty);
 
-        // 啟動背景監控循環 (約 2Hz)
+        // 啟動背景監控循環
         Task.Run(async () =>
         {
             while (!token.IsCancellationRequested)
@@ -115,10 +116,7 @@ public partial class App : Application
                 {
                     await ProcessTranslationAsync(token);
                 }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
+                catch (OperationCanceledException) { break; }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"監控循環錯誤: {ex.Message}");
@@ -128,39 +126,25 @@ public partial class App : Application
         }, token);
     }
 
-    private void StopMonitoring()
-    {
-        _isMonitoring = false;
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = null;
-        Dispatcher.Invoke(() => _overlayWindow?.Hide());
-    }
-
     private async Task ProcessTranslationAsync(CancellationToken token)
     {
         try 
         {
-            // 1. 座標轉換 (邏輯 -> 物理)
             var physical = _captureService.GetPhysicalCoordinates(
                 _selectedArea.X, _selectedArea.Y, _selectedArea.Width, _selectedArea.Height, _scaleX, _scaleY);
             
-            System.Diagnostics.Debug.WriteLine($"[Debug] 選取區域: L={_selectedArea.X}, T={_selectedArea.Y}, W={_selectedArea.Width}, H={_selectedArea.Height}, Scale={_scaleX}");
-
-            // 2. 截圖
             var imageBytes = _captureService.CaptureScreenRegion(
                 physical.X, physical.Y, physical.W, physical.H);
 
             if (imageBytes.Length == 0) return;
             token.ThrowIfCancellationRequested();
 
-            // 3. OCR 辨識
             var currentText = await _ocrService.RecognizeFromBytesAsync(imageBytes);
-            currentText = currentText.Trim(); // 僅移除頭尾空白，保留內部換行
+            currentText = currentText.Trim();
 
             if (string.IsNullOrEmpty(currentText)) 
             {
-                Dispatcher.Invoke(() => _overlayWindow?.UpdateResult(_selectedArea, string.Empty));
+                Dispatcher.Invoke(() => _overlayWindow?.UpdateResult(_selectedArea, _overlayRect, string.Empty));
                 return;
             }
 
@@ -168,14 +152,12 @@ public partial class App : Application
             _lastText = currentText;
             token.ThrowIfCancellationRequested();
 
-            // 4. 翻譯
             var translated = await _translationService.TranslateAsync(currentText);
             token.ThrowIfCancellationRequested();
 
-            // 5. 更新 UI
             Dispatcher.Invoke(() =>
             {
-                _overlayWindow?.UpdateResult(_selectedArea, translated);
+                _overlayWindow?.UpdateResult(_selectedArea, _overlayRect, translated);
             });
         }
         catch (OperationCanceledException) { throw; }

@@ -22,7 +22,6 @@
                 CornerRadius="8" 
                 BorderBrush="#44FFFFFF" 
                 BorderThickness="1"
-                MaxWidth="400"
                 Visibility="Collapsed">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.5"/>
@@ -33,6 +32,7 @@
                        FontWeight="SemiBold"
                        TextWrapping="Wrap" 
                        TextAlignment="Center"
+                       VerticalAlignment="Center"
                        Padding="12"/>
         </Border>
     </Canvas>

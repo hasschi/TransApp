@@ -40,22 +40,24 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
-    /// 更新翻譯結果並繪製提示框。
+    /// 更新翻譯結果。
     /// </summary>
-    public void UpdateResult(Rect area, string text)
+    /// <param name="sourceArea">OCR 選取來源區域 (用於顯示藍色提示框)</param>
+    /// <param name="targetRect">翻譯文字框位置與大小 (由 Alt+R 調整)</param>
+    /// <param name="text">翻譯文字</param>
+    public void UpdateResult(Rect sourceArea, Rect targetRect, string text)
     {
-        // 確保視窗座標正確 (有時螢幕配置改變需要重新對齊)
         this.Left = SystemParameters.VirtualScreenLeft;
         this.Top = SystemParameters.VirtualScreenTop;
 
-        // 1. 更新提示框 (Highlight)
+        // 1. 更新 OCR 選取來源提示框 (保持原位)
         SelectionHighlight.Visibility = Visibility.Visible;
-        Canvas.SetLeft(SelectionHighlight, area.X - this.Left);
-        Canvas.SetTop(SelectionHighlight, area.Y - this.Top);
-        SelectionHighlight.Width = area.Width;
-        SelectionHighlight.Height = area.Height;
+        Canvas.SetLeft(SelectionHighlight, sourceArea.X - this.Left);
+        Canvas.SetTop(SelectionHighlight, sourceArea.Y - this.Top);
+        SelectionHighlight.Width = sourceArea.Width;
+        SelectionHighlight.Height = sourceArea.Height;
 
-        // 2. 更新翻譯文字 (Text)
+        // 2. 更新翻譯文字框 (位置由 targetRect 決定)
         if (string.IsNullOrEmpty(text))
         {
             TranslationContainer.Visibility = Visibility.Collapsed;
@@ -65,13 +67,13 @@ public partial class OverlayWindow : Window
             TranslationContainer.Visibility = Visibility.Visible;
             TranslatedText.Text = text;
 
-            // 計算文字顯示位置 (選取框下方 5 像素，置中對齊選取框)
-            // 這裡必須在佈局完成後計算 ActualWidth，我們先設置一個估算位置
-            double textLeft = (area.X - this.Left) + (area.Width / 2) - 150; // 假定寬度 300
-            double textTop = (area.Y - this.Top) + area.Height + 5;
+            // 設置文字框位置與大小
+            Canvas.SetLeft(TranslationContainer, targetRect.X - this.Left);
+            Canvas.SetTop(TranslationContainer, targetRect.Y - this.Top);
             
-            Canvas.SetLeft(TranslationContainer, textLeft);
-            Canvas.SetTop(TranslationContainer, textTop);
+            // 允許文字框具有固定的寬度與高度（如果使用者有拉伸的話）
+            TranslationContainer.Width = targetRect.Width;
+            TranslationContainer.Height = targetRect.Height;
         }
     }
 }
